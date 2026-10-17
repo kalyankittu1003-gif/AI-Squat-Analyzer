@@ -1,0 +1,5 @@
+packages.txt text eol=lf
+requirements.txt text eol=lf
+squat_analyzer/packages.txt text eol=lf
+squat_analyzer/requirements.txt text eol=lf
+*.sh text eol=lf
