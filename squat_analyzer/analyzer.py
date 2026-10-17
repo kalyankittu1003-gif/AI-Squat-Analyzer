@@ -61,12 +61,19 @@ def process_video(video_path, progress_callback=None):
     fourcc = cv2.VideoWriter_fourcc(*'mp4v')
     out = cv2.VideoWriter(output_path, fourcc, out_fps, (width, height))
     
-    # Initialize PoseLandmarker Tasks API with VIDEO running mode for faster tracking
+    # Initialize PoseLandmarker Tasks API with in-memory buffer and explicit CPU delegate
     base_dir = os.path.dirname(os.path.abspath(__file__))
     model_asset_path = os.path.join(base_dir, 'pose_landmarker.task')
     if not os.path.exists(model_asset_path):
         model_asset_path = 'pose_landmarker.task'
-    base_options = python.BaseOptions(model_asset_path=model_asset_path)
+    
+    with open(model_asset_path, 'rb') as f:
+        model_bytes = f.read()
+
+    base_options = python.BaseOptions(
+        model_asset_buffer=model_bytes,
+        delegate=python.BaseOptions.Delegate.CPU
+    )
     options = vision.PoseLandmarkerOptions(
         base_options=base_options,
         running_mode=vision.RunningMode.VIDEO,
