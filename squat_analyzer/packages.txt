@@ -1,7 +1,11 @@
 libgl1
 libegl1
+libgles2
 libglx-mesa0
 libegl-mesa0
 libglib2.0-0
 libgomp1
+libsm6
+libxext6
+libxrender1
 ffmpeg
