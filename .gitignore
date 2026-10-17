@@ -1,0 +1,25 @@
+# Virtual Environment
+.venv/
+venv/
+ENV/
+
+# Secrets and credentials
+.env
+*.env
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Temporary video outputs and caches
+*.mp4
+*.avi
+*.mov
+annotated_video*
+test_bench*
+
+# Operating System files
+.DS_Store
+Thumbs.db

@@ -1,0 +1,7 @@
+streamlit
+opencv-python
+mediapipe
+google-generativeai
+requests
+pydantic
+python-dotenv
