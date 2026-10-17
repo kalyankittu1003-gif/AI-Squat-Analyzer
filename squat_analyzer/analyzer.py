@@ -61,41 +61,17 @@ def process_video(video_path, progress_callback=None):
     fourcc = cv2.VideoWriter_fourcc(*'mp4v')
     out = cv2.VideoWriter(output_path, fourcc, out_fps, (width, height))
     
-    # Initialize Pose detector with Tasks API and graceful solutions.pose fallback
-    detector = None
-    pose_solution = None
-    use_tasks_api = True
-
-    try:
-        base_dir = os.path.dirname(os.path.abspath(__file__))
-        model_asset_path = os.path.join(base_dir, 'pose_landmarker.task')
-        if not os.path.exists(model_asset_path):
-            model_asset_path = 'pose_landmarker.task'
-        
-        with open(model_asset_path, 'rb') as f:
-            model_bytes = f.read()
-
-        base_options = python.BaseOptions(
-            model_asset_buffer=model_bytes,
-            delegate=python.BaseOptions.Delegate.CPU
-        )
-        options = vision.PoseLandmarkerOptions(
-            base_options=base_options,
-            running_mode=vision.RunningMode.VIDEO,
-            output_segmentation_masks=False)
-        detector = vision.PoseLandmarker.create_from_options(options)
-    except Exception as init_err:
-        print("Tasks API initialization warning, falling back to solutions.pose:", init_err)
-        if hasattr(mp, 'solutions') and hasattr(mp.solutions, 'pose'):
-            use_tasks_api = False
-            pose_solution = mp.solutions.pose.Pose(
-                static_image_mode=False,
-                model_complexity=1,
-                min_detection_confidence=0.5,
-                min_tracking_confidence=0.5
-            )
-        else:
-            raise init_err
+    # Initialize PoseLandmarker Tasks API with VIDEO running mode for faster tracking
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    model_asset_path = os.path.join(base_dir, 'pose_landmarker.task')
+    if not os.path.exists(model_asset_path):
+        model_asset_path = 'pose_landmarker.task'
+    base_options = python.BaseOptions(model_asset_path=model_asset_path)
+    options = vision.PoseLandmarkerOptions(
+        base_options=base_options,
+        running_mode=vision.RunningMode.VIDEO,
+        output_segmentation_masks=False)
+    detector = vision.PoseLandmarker.create_from_options(options)
     
     frame_idx = 0
     processed_count = 0
@@ -124,25 +100,18 @@ def process_video(video_path, progress_callback=None):
         if (orig_width, orig_height) != (width, height):
             frame = cv2.resize(frame, (width, height), interpolation=cv2.INTER_AREA)
             
-        # Convert to RGB
+        # Convert to RGB and then to mp.Image
         rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=rgb_frame)
         
-        # Detect pose landmarks
-        landmarks = None
-        if use_tasks_api and detector is not None:
-            mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=rgb_frame)
-            detection_result = detector.detect_for_video(mp_image, timestamp_ms)
-            if detection_result.pose_landmarks and len(detection_result.pose_landmarks) > 0:
-                landmarks = detection_result.pose_landmarks[0]
-        elif pose_solution is not None:
-            sol_result = pose_solution.process(rgb_frame)
-            if sol_result.pose_landmarks and sol_result.pose_landmarks.landmark:
-                landmarks = sol_result.pose_landmarks.landmark
+        # Fast Video-mode Detect
+        detection_result = detector.detect_for_video(mp_image, timestamp_ms)
         
         image = frame.copy() # BGR for writing
         
         try:
-            if landmarks is not None:
+            if detection_result.pose_landmarks and len(detection_result.pose_landmarks) > 0:
+                landmarks = detection_result.pose_landmarks[0]
                 
                 # Indexes for Pose Landmarker:
                 # 0: nose, 7,8: ears

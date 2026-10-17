@@ -118,20 +118,10 @@ if uploaded_file is not None:
         def on_progress(current, total):
             pct = min(100, int((current / total) * 100)) if total > 0 else 0
             progress_bar.progress(pct, text=f"Analyzing video: {pct}% complete (frame {current}/{total})")
-        try:
-            output_video_path, reps_data = process_video(tfile.name, progress_callback=on_progress)
-            progress_bar.progress(100, text="Analysis complete!")
-            status_text.success("Video processing complete!")
-        except Exception as e:
-            progress_bar.empty()
-            status_text.empty()
-            st.error(f"Error during video processing: {e}")
-            st.exception(e)
-            try:
-                os.unlink(tfile.name)
-            except:
-                pass
-            st.stop()
+
+        output_video_path, reps_data = process_video(tfile.name, progress_callback=on_progress)
+        progress_bar.progress(100, text="Analysis complete!")
+        status_text.success("Video processing complete!")
             
         st.subheader("Annotated Video")
         # Display output video
